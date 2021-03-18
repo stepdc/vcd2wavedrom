@@ -6,6 +6,7 @@ import re
 
 from Verilog_VCD import parse_vcd
 from Verilog_VCD import get_timescale
+from vcdvcd import VCDVCD
 
 busregex = re.compile(r'(.+)\[(\d+)\]')
 busregex2 = re.compile(r'(.+)\[(\d):(\d)\]')
@@ -214,18 +215,29 @@ def vcd2wavedrom():
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Transform VCD to wavedrom')
-    parser.add_argument('--config', dest='configfile', required=True)
+    parser.add_argument('--config', dest='configfile', required=False)
     parser.add_argument('--input', nargs='?', dest='input', required=True)
     parser.add_argument('--output', nargs='?', dest='output', required=False)
 
     args = parser.parse_args(argv)
     args.input = os.path.abspath(os.path.join(os.getcwd(), args.input))
 
-    with open(args.configfile) as json_file:
-        config.update(json.load(json_file))
+    if (args.configfile is not None):
+        with open(args.configfile) as json_file:
+            config.update(json.load(json_file))
 
     config['input'] = args.input
     config['output'] = args.output
+ #   print(config)
+    vcd = VCDVCD(config['input'])
+    config['filter'] = vcd.signals
+    config['maxtime']= vcd.endtime
+    config['samplerate'] = 1000
+    config['clocks'] = []
+    config['signal'] ={}
+    config['replace'] ={}
+#    print(config)
+#    print(vcd.)
     vcd2wavedrom()
 
 
