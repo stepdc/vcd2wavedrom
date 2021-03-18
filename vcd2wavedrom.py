@@ -13,9 +13,8 @@ config = {}
 
 
 def replacevalue(wave, strval):
-#    wavename = wave.split('.')[1]
     if 'replace' in config and \
-    wave in config['replace']:
+       wave in config['replace']:
         if strval in config['replace'][wave]:
             return config['replace'][wave][strval]
     return strval
@@ -34,7 +33,6 @@ def group_buses(vcd_dict, slots):
             pos = int(result.group(2))
             if name not in buses:
                 buses[name] = {
- #                       'name': name.split('.')[1],
                         'name': name,
                         'wave': '',
                         'data': []
@@ -47,7 +45,6 @@ def group_buses(vcd_dict, slots):
     """
     for wave in buses:
         for slot in range(slots):
-#            if not samplenow(wave, slot):
             if not samplenow(slot):
                 continue
             byte = 0
@@ -76,11 +73,9 @@ def group_buses(vcd_dict, slots):
 
 
 def homogenize_waves(vcd_dict, timescale):
-#   slots = int(config['maxtime']/timescale)
     slots = int(config['maxtime']/timescale) + 1
     for isig, wave in enumerate(vcd_dict):
         lastval = 'x'
-#        for tidx, t in enumerate(range(0, config['maxtime'], timescale)):
         for tidx, t in enumerate(range(0, config['maxtime'] + timescale, timescale)):
             if len(vcd_dict[wave]) > tidx:
                 newtime = vcd_dict[wave][tidx][0]
@@ -95,24 +90,18 @@ def homogenize_waves(vcd_dict, timescale):
 
 
 def includewave(wave):
-    #wavename = wave.split('.')[1]
-    wavename = wave
     if '__all__' in config['filter'] or \
-       wavename in config['filter']:
+       wave in config['filter']:
         return True
     return False
 
 
 def clockvalue(wave, digit):
-    wavename = wave.split('.')[1]
-    #if wavename in config['clocks'] and digit == '1':
     if wave in config['clocks'] and digit == '1':
         return 'P'
     return digit
 
 
-#def samplenow(wave, tick):
-#    wavename = wave.split('.')[1]
 def samplenow(tick):
     offset = 0
     if 'offset' in config:
@@ -153,16 +142,13 @@ def dump_wavedrom(vcd_dict, timescale):
         if not includewave(wave):
             continue
         drom['signal'].append({
-#            'name': wave.split('.')[1],
-            'name': wave,#.split('.')[1],
+            'name': wave,
             'wave': '',
             'data': []
         })
         lastval = ''
-#        isbus = (len(vcd_dict[wave][0][1]) > 1)
         isbus = busregex2.match(wave) is not None
         for j in vcd_dict[wave]:
- #           if not samplenow(wave, j[0]):
             if not samplenow(j[0]):
                 continue
             digit = '.'
@@ -219,9 +205,9 @@ def vcd2wavedrom():
     timescale = int(re.match(r'(\d+)', get_timescale()).group(1))
     vcd_dict = {}
     for i in vcd:
-        vcd_dict[vcd[i]['nets'][0]['hier']+'.'+vcd[i]['nets'][0]['name']] = \
-            vcd[i]['tv']
-
+        for j in range(0, len(vcd[i]['nets'])):
+            vcd_dict[vcd[i]['nets'][j]['hier'] + '.' + vcd[i]['nets'][j]['name']] = \
+                vcd[i]['tv']
     homogenize_waves(vcd_dict, timescale)
     dump_wavedrom(vcd_dict, timescale)
 
