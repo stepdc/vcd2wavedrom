@@ -136,7 +136,7 @@ def appendconfig(wave):
 
 
 def dump_wavedrom(vcd_dict, vcd_type, timescale):
-    drom = {'signal': [], 'head' : {'tick': 0}, 'config': {'hscale': 1}}
+    drom = {'signal': [], 'head' : {'tick': 0, 'text': ''}, 'config': {'hscale': 1}}
     slots = int(config['maxtime']/timescale)
 
     buses = group_buses(vcd_dict, slots)
@@ -233,6 +233,8 @@ def dump_wavedrom(vcd_dict, vcd_type, timescale):
     drom['signal'] = ordered
     if 'hscale' in config:
         drom['config']['hscale'] = config['hscale']
+
+    drom['head']['text'] = "time scale: " + str(config['samplerate']) + config['timeunit']
     """
     Print the result
     """
@@ -252,6 +254,18 @@ def dump_wavedrom(vcd_dict, vcd_type, timescale):
         if (config['format']=='html'):
             print(HTML_EFORMAT)
 
+def gcd(my_list):
+    result = my_list[0]
+    for x in my_list[1:]:
+        if result < x:
+            temp = result
+            result = x
+            x = temp
+        while x != 0:
+            temp = x
+            x = result % x
+            result = temp
+    return result
 
 def vcd2wavedrom():
     #vcd = parse_vcd(config['input'])
@@ -263,33 +277,27 @@ def vcd2wavedrom():
     config['signal'] = {}
     config['replace'] = {}
     timescale = int(vcd.timescale['magnitude'])
+    config['timeunit']=vcd.timescale['unit']
    # print(timescale)
     vcd_dict = {}
     vcd_type={}
     ### find sample time
     sampletime=config['maxtime']
+    samplelist=[]
     for i, j in vcd.data.items():
         if  not (j.references[0] in config['exclude']):
             if (len(j.tv) > 2):
                 sz = j.tv[1][0]-j.tv[0][0]
-                if ((sz>0) and (sz <sampletime)):
-                   sampletime = sz
+                #print(">>>", sz)
+                if (sz>0 and sz not in samplelist):
+                   samplelist.append(sz)
             vcd_dict[j.references[0]] = list(dict(j.tv).items())
             vcd_type[j.references[0]] = int(j.size)
 
 
-#        for j in range(0, len(vcd[i]['nets'])):
-#            if (len(vcd[i]['tv'])>2):
-#                sz = vcd[i]['tv'][1][0]-vcd[i]['tv'][0][0]
-#                if ((sz>0) and (sz <sampletime)):
-#                    sampletime = sz
-            #print(vcd[i]['tv'])
-#            vcd_dict[vcd[i]['nets'][j]['hier'] + '.' + vcd[i]['nets'][j]['name']] = \
- #               vcd[i]['tv']
-           # print(vcd[i]['nets'][j]['name'], "-",  vcd[i]['tv'])
-    #print(">?>>>>? ", sampletime)
-    config['samplerate']=sampletime
-    #print(vcd_dict)
+  #  print(">?>>>>? ", gcd(samplelist))
+    config['samplerate']=gcd(samplelist)
+#    print(vcd_dict)
     #exit(0)
     homogenize_waves(vcd_dict, timescale)
     dump_wavedrom(vcd_dict, vcd_type, timescale)
