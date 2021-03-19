@@ -269,13 +269,13 @@ def vcd2wavedrom():
     ### find sample time
     sampletime=config['maxtime']
     for i, j in vcd.data.items():
-        #print(j.references, ":", j.tv)
-        if (len(j.tv) > 2):
-            sz = j.tv[1][0]-j.tv[0][0]
-            if ((sz>0) and (sz <sampletime)):
-               sampletime = sz
-        vcd_dict[j.references[0]] = list(dict(j.tv).items())
-        vcd_type[j.references[0]] = int(j.size)
+        if  not (j.references[0] in config['exclude']):
+            if (len(j.tv) > 2):
+                sz = j.tv[1][0]-j.tv[0][0]
+                if ((sz>0) and (sz <sampletime)):
+                   sampletime = sz
+            vcd_dict[j.references[0]] = list(dict(j.tv).items())
+            vcd_type[j.references[0]] = int(j.size)
 
 
 #        for j in range(0, len(vcd[i]['nets'])):
@@ -301,10 +301,15 @@ def main(argv):
 #    parser.add_argument('--samplerate', dest='samplerate', required=True)
     parser.add_argument('--input', nargs='?', dest='input', required=True)
     parser.add_argument('--output', nargs='?', dest='output', required=False)
+    parser.add_argument('--exclude', nargs='?', dest='exclude', required=False)
     parser.add_argument('--format', nargs='?', dest='outputformat', required=False)
 
     args = parser.parse_args(argv)
     args.input = os.path.abspath(os.path.join(os.getcwd(), args.input))
+    config['exclude']=[]
+    if (args.exclude is not None):
+        args.exclude= os.path.abspath(os.path.join(os.getcwd(), args.exclude))
+        config['exclude'] = [line.strip() for line in open(args.exclude, 'r')]
 
     if (args.configfile is not None):
         with open(args.configfile) as json_file:

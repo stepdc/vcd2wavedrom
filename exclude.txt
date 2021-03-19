@@ -1,0 +1,5 @@
+tb_sw_decode.sw[10:0]
+tb_sw_decode.single_vector[13:0]
+tb_sw_decode.COLUMNS[31:0]
+tb_sw_decode.INPUTS[31:0]
+tb_sw_decode.uut.u_bd_divider.BIT_SIZE[31:0]
