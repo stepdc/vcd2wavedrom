@@ -4,9 +4,21 @@ import argparse
 import json
 import re
 
-from Verilog_VCD import parse_vcd
-from Verilog_VCD import get_timescale
 from vcdvcd import VCDVCD
+
+HTML_BFORMAT="""
+<html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.6.8/skins/default.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.6.8/wavedrom.min.js" type="text/javascript"></script>
+<body onload="WaveDrom.ProcessAll()">
+<script type="WaveDrom">
+"""
+
+HTML_EFORMAT="""
+</script>
+</body>
+</html>
+"""
 
 busregex = re.compile(r'(.+)\[(\d+)\]')
 busregex2 = re.compile(r'(.+)\[(\d):(\d)\]')
@@ -222,9 +234,18 @@ def dump_wavedrom(vcd_dict, timescale):
 
     if config['output']:
         f = open(config['output'], 'w')
+        if (config['format']=='html'):
+            f.write(HTML_BFORMAT)
+
         f.write(json.dumps(drom, indent=4))
+        if (config['format'] == 'html'):
+            f.write(HTML_EFORMAT)
     else:
+        if (config['format']=='html'):
+            print(HTML_BFORMAT)
         print(json.dumps(drom, indent=4))
+        if (config['format']=='html'):
+            print(HTML_EFORMAT)
 
 
 def vcd2wavedrom():
@@ -273,6 +294,7 @@ def main(argv):
 #    parser.add_argument('--samplerate', dest='samplerate', required=True)
     parser.add_argument('--input', nargs='?', dest='input', required=True)
     parser.add_argument('--output', nargs='?', dest='output', required=False)
+    parser.add_argument('--format', nargs='?', dest='outputformat', required=False)
 
     args = parser.parse_args(argv)
     args.input = os.path.abspath(os.path.join(os.getcwd(), args.input))
@@ -283,10 +305,8 @@ def main(argv):
 
     config['input'] = args.input
     config['output'] = args.output
- #   print(config)
+    config['format'] = args.outputformat
 
-#    print(config)
-#   print(vcd.begintime, vcd.endtime)
     vcd2wavedrom()
 
 
