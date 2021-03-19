@@ -97,7 +97,7 @@ def includewave(wave):
     return False
 
 
-def clockvalue(wave, digit):
+def clockvalue(wave, digit) -> object:
     if wave in config['clocks'] and digit == '1':
         return 'P'
     return digit
@@ -124,8 +124,9 @@ def appendconfig(wave):
 
 
 def dump_wavedrom(vcd_dict, timescale):
-    drom = {'signal': [], 'config': {'hscale': 1}}
+    drom = {'signal': [], 'head' : {'tick': 0}, 'config': {'hscale': 1}}
     slots = int(config['maxtime']/timescale)
+
     buses = group_buses(vcd_dict, slots)
     """
     Replace old signals that were grouped
@@ -139,7 +140,8 @@ def dump_wavedrom(vcd_dict, timescale):
     Create waveforms for the rest of the signals
     """
     idromsig = 0
-    for wave in vcd_dict:
+
+    for wave, pattern in vcd_dict.items():
         if not includewave(wave):
             continue
         drom['signal'].append({
@@ -149,6 +151,8 @@ def dump_wavedrom(vcd_dict, timescale):
         })
         lastval = ''
         isbus = busregex2.match(wave) is not None
+        if (len(pattern[0][1])>2):
+            isbus = True
         for j in vcd_dict[wave]:
             if not samplenow(j[0]):
                 continue
@@ -157,17 +161,36 @@ def dump_wavedrom(vcd_dict, timescale):
                 if lastval != j[1]:
                     digit = '='
                 if 'x' not in j[1]:
-                    drom['signal'][idromsig]['data'].append(
+                    if (digit != '.'):
+                        #if (drom['signal'][idromsig]['name'] == 'tb_divider.uut.BIT_SIZE'):
+
+                        drom['signal'][idromsig]['data'].append(
                             format(int(j[1], 2), 'X')
-                    )
+                        )
                 else:
                     digit = 'x'
             else:
-                j = (j[0], clockvalue(wave, j[1]))
-                if lastval != j[1]:
+                j = (j[0], clockvalue(wave, format(int(j[1], 2), 'X')))
+                #print(drom['signal'][idromsig]['name'], j[1])
+                #print(drom['signal'][idromsig], lastval, digit, j)
+                if lastval != j[1] :
                     digit = j[1]
             drom['signal'][idromsig]['wave'] += digit
+            #print(drom['signal'][idromsig])
+            #print(">>", drom['signal'][idromsig]['name'], drom['signal'][idromsig]['wave'])
+
             lastval = j[1]
+
+
+        # replace redundent 0 or 1 as .
+        ti=drom['signal'][idromsig]['wave']
+        re.sub('(?<=(1))\\1', ".", ti)
+        ti = re.sub('(?<=(0))\\1', ".", ti)
+        ti = re.sub('(?<=(1))\\1', ".", ti)
+        ti = re.sub('(?<=(0))\\1', ".", ti)
+
+        drom['signal'][idromsig]['wave']=ti
+#        print(drom['signal'][idromsig]['wave'])
         idromsig += 1
 
     """
@@ -190,10 +213,10 @@ def dump_wavedrom(vcd_dict, timescale):
     drom['signal'] = ordered
     if 'hscale' in config:
         drom['config']['hscale'] = config['hscale']
-
     """
     Print the result
     """
+
     if config['output']:
         f = open(config['output'], 'w')
         f.write(json.dumps(drom, indent=4))
@@ -202,13 +225,41 @@ def dump_wavedrom(vcd_dict, timescale):
 
 
 def vcd2wavedrom():
-    vcd = parse_vcd(config['input'])
-    timescale = int(re.match(r'(\d+)', get_timescale()).group(1))
+    #vcd = parse_vcd(config['input'])
+    vcd = VCDVCD(config['input'])
+    config['filter'] = vcd.signals
+    config['maxtime'] = vcd.endtime
+    #    config['samplerate'] = int(args.samplerate)
+    config['clocks'] = []
+    config['signal'] = {}
+    config['replace'] = {}
+    timescale = int(vcd.timescale['magnitude'])
+   # print(timescale)
     vcd_dict = {}
-    for i in vcd:
-        for j in range(0, len(vcd[i]['nets'])):
-            vcd_dict[vcd[i]['nets'][j]['hier'] + '.' + vcd[i]['nets'][j]['name']] = \
-                vcd[i]['tv']
+    ### find sample time
+    sampletime=config['maxtime']
+    for i, j in vcd.data.items():
+        #print(j.references, ":", j.tv)
+        if (len(j.tv) > 2):
+            sz = j.tv[1][0]-j.tv[0][0]
+            if ((sz>0) and (sz <sampletime)):
+               sampletime = sz
+        vcd_dict[j.references[0]] = list(dict(j.tv).items())
+
+
+#        for j in range(0, len(vcd[i]['nets'])):
+#            if (len(vcd[i]['tv'])>2):
+#                sz = vcd[i]['tv'][1][0]-vcd[i]['tv'][0][0]
+#                if ((sz>0) and (sz <sampletime)):
+#                    sampletime = sz
+            #print(vcd[i]['tv'])
+#            vcd_dict[vcd[i]['nets'][j]['hier'] + '.' + vcd[i]['nets'][j]['name']] = \
+ #               vcd[i]['tv']
+           # print(vcd[i]['nets'][j]['name'], "-",  vcd[i]['tv'])
+    #print(">?>>>>? ", sampletime)
+    config['samplerate']=sampletime
+    #print(vcd_dict)
+    #exit(0)
     homogenize_waves(vcd_dict, timescale)
     dump_wavedrom(vcd_dict, timescale)
 
@@ -216,6 +267,7 @@ def vcd2wavedrom():
 def main(argv):
     parser = argparse.ArgumentParser(description='Transform VCD to wavedrom')
     parser.add_argument('--config', dest='configfile', required=False)
+#    parser.add_argument('--samplerate', dest='samplerate', required=True)
     parser.add_argument('--input', nargs='?', dest='input', required=True)
     parser.add_argument('--output', nargs='?', dest='output', required=False)
 
@@ -229,15 +281,9 @@ def main(argv):
     config['input'] = args.input
     config['output'] = args.output
  #   print(config)
-    vcd = VCDVCD(config['input'])
-    config['filter'] = vcd.signals
-    config['maxtime']= vcd.endtime
-    config['samplerate'] = 1000
-    config['clocks'] = []
-    config['signal'] ={}
-    config['replace'] ={}
+
 #    print(config)
-#    print(vcd.)
+#   print(vcd.begintime, vcd.endtime)
     vcd2wavedrom()
 
 
