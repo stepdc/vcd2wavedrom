@@ -286,7 +286,16 @@ def vcd2wavedrom():
                 sz = j.tv[1][0]-j.tv[0][0]
                 if (sz>0 and sz not in samplelist):
                    samplelist.append(sz)
-            vcd_dict[j.references[0]] = list(dict(j.tv).items())
+            # get the last elment in the list
+            tv=list(dict(j.tv).items())
+            tvl=tv[-1]
+            # if the last element is the same as the end ttime, remove it
+            if (tvl[0]>=vcd.endtime):
+#                print(j.references[0], tv)
+                tv.pop();
+#                print(j.references[0], tv)
+
+            vcd_dict[j.references[0]] = list(tv)
             vcd_type[j.references[0]] = int(j.size)
 
 
