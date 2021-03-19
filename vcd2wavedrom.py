@@ -170,7 +170,10 @@ def dump_wavedrom(vcd_dict, timescale):
                 else:
                     digit = 'x'
             else:
-                j = (j[0], clockvalue(wave, format(int(j[1], 2), 'X')))
+                if (j[1]=='x'):
+                    j = (j[0], 'x')
+                else:
+                    j = (j[0], clockvalue(wave, format(int(j[1], 2), 'X')))
                 #print(drom['signal'][idromsig]['name'], j[1])
                 #print(drom['signal'][idromsig], lastval, digit, j)
                 if lastval != j[1] :
