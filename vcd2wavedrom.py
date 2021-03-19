@@ -135,7 +135,7 @@ def appendconfig(wave):
         wave.update(config['signal'][wavename])
 
 
-def dump_wavedrom(vcd_dict, vcd_type, timescale):
+def dump_wavedrom(vcd_dict, timescale):
     drom = {'signal': [], 'head' : {'tick': 0}, 'config': {'hscale': 1}}
     slots = int(config['maxtime']/timescale)
 
@@ -161,13 +161,10 @@ def dump_wavedrom(vcd_dict, vcd_type, timescale):
             'wave': '',
             'data': []
         })
-
         lastval = ''
         isbus = busregex2.match(wave) is not None
-        if (vcd_type[wave] == 'integer'  or vcd_type[wave] == 'parameter'):
-      # make sure we can understtand that might be multiple bits
+        if (len(pattern[0][1])>2):
             isbus = True
-#        print(wave, vcd_type[wave], isbus)
         for j in vcd_dict[wave]:
             if not samplenow(j[0]):
                 continue
@@ -263,7 +260,6 @@ def vcd2wavedrom():
     timescale = int(vcd.timescale['magnitude'])
    # print(timescale)
     vcd_dict = {}
-    vcd_type={}
     ### find sample time
     sampletime=config['maxtime']
     for i, j in vcd.data.items():
@@ -273,7 +269,6 @@ def vcd2wavedrom():
             if ((sz>0) and (sz <sampletime)):
                sampletime = sz
         vcd_dict[j.references[0]] = list(dict(j.tv).items())
-        vcd_type[j.references[0]] = j.var_type
 
 
 #        for j in range(0, len(vcd[i]['nets'])):
@@ -290,7 +285,7 @@ def vcd2wavedrom():
     #print(vcd_dict)
     #exit(0)
     homogenize_waves(vcd_dict, timescale)
-    dump_wavedrom(vcd_dict, vcd_type, timescale)
+    dump_wavedrom(vcd_dict, timescale)
 
 
 def main(argv):
