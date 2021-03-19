@@ -163,13 +163,11 @@ def dump_wavedrom(vcd_dict, vcd_type, timescale):
         })
 
         lastval = ''
-        isbus = busregex2.match(wave) is not None
-        #if (vcd_type[wave] == 'integer'  or vcd_type[wave] == 'parameter'):
-      # make sure we can understtand that might be multiple bits
+#        isbus = busregex2.match(wave) is not None
+        isbus = False
+        # check if the save has multiple bit. If it does, it is a bus
         if (vcd_type[wave]>1):
             isbus = True
-#        print(wave, vcd_type[wave], isbus)
-#        print("------")
         for j in vcd_dict[wave]:
             if not samplenow(j[0]):
                 continue
@@ -204,13 +202,12 @@ def dump_wavedrom(vcd_dict, vcd_type, timescale):
 
         # replace redundent 0 or 1 as .
         ti=drom['signal'][idromsig]['wave']
-        re.sub('(?<=(1))\\1', ".", ti)
-        ti = re.sub('(?<=(0))\\1', ".", ti)
-        ti = re.sub('(?<=(1))\\1', ".", ti)
-        ti = re.sub('(?<=(0))\\1', ".", ti)
+#        re.sub('(?<=(1))\\1', ".", ti)
+#        ti = re.sub('(?<=(0))\\1', ".", ti)
+#        ti = re.sub('(?<=(1))\\1', ".", ti)
+#        ti = re.sub('(?<=(0))\\1', ".", ti)
 
         drom['signal'][idromsig]['wave']=ti
-#        print(drom['signal'][idromsig]['wave'])
         idromsig += 1
 
     """
@@ -278,7 +275,6 @@ def vcd2wavedrom():
     config['replace'] = {}
     timescale = int(vcd.timescale['magnitude'])
     config['timeunit']=vcd.timescale['unit']
-   # print(timescale)
     vcd_dict = {}
     vcd_type={}
     ### find sample time
@@ -288,17 +284,14 @@ def vcd2wavedrom():
         if  not (j.references[0] in config['exclude']):
             if (len(j.tv) > 2):
                 sz = j.tv[1][0]-j.tv[0][0]
-                #print(">>>", sz)
                 if (sz>0 and sz not in samplelist):
                    samplelist.append(sz)
             vcd_dict[j.references[0]] = list(dict(j.tv).items())
             vcd_type[j.references[0]] = int(j.size)
 
 
-  #  print(">?>>>>? ", gcd(samplelist))
+    # need to find sample list and use the gcd of the samplelist
     config['samplerate']=gcd(samplelist)
-#    print(vcd_dict)
-    #exit(0)
     homogenize_waves(vcd_dict, timescale)
     dump_wavedrom(vcd_dict, vcd_type, timescale)
 
@@ -306,7 +299,6 @@ def vcd2wavedrom():
 def main(argv):
     parser = argparse.ArgumentParser(description='Transform VCD to wavedrom')
     parser.add_argument('--config', dest='configfile', required=False)
-#    parser.add_argument('--samplerate', dest='samplerate', required=True)
     parser.add_argument('--input', nargs='?', dest='input', required=True)
     parser.add_argument('--output', nargs='?', dest='output', required=False)
     parser.add_argument('--exclude', nargs='?', dest='exclude', required=False)
