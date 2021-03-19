@@ -16,5 +16,5 @@ optional arguments:
 ```
 Example
 ```
-vcd2wavedrom.py --input example.vcd --format html --out example.html --exclude exclude.txt
+vcd2wavedrom.py --input tb_sw_decode.vcd --format html --out tb_sw_decode.html --exclude exclude.txt
 ```
