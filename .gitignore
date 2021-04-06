@@ -1,3 +1,6 @@
 *.svg
 *.drom
 __pycache__
+.idea
+.vscode
+
