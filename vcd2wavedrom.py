@@ -305,6 +305,8 @@ def vcd2wavedrom():
     homogenize_waves(vcd_dict, timescale)
     dump_wavedrom(vcd_dict, vcd_type, timescale)
 
+def is_non_zero_file(fpath):
+    return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Transform VCD to wavedrom')
@@ -321,14 +323,16 @@ def main(argv):
     config['include'] = []
     if (args.exclude is not None):
         args.exclude = os.path.abspath(os.path.join(os.getcwd(), args.exclude))
-        config['exclude'] = [line.strip() for line in open(args.exclude, 'r')]
+        if is_non_zero_file(args.exclude):
+            config['exclude'] = [line.strip() for line in open(args.exclude, 'r')]
 
     if (args.include is not None):
         # disable exclude
         args.include = os.path.abspath(os.path.join(os.getcwd(), args.include))
-        config['include'] = [line.strip() for line in open(args.include, 'r')]
-        if config['include']:
-            config['exclude'] = []
+        if is_non_zero_file(args.include):
+            config['include'] = [line.strip() for line in open(args.include, 'r')]
+            if config['include']:
+                config['exclude'] = []
 
     if (args.configfile is not None):
         with open(args.configfile) as json_file:
